@@ -18,7 +18,7 @@ pipeline {
         
         stage("Git Checkout"){
         steps{
-            git branch: 'main', changelog: false, poll: false, url: 'https://github.com/AbderrahmaneOd/spring-petclinic-jenkins'
+            git branch: 'master', changelog: false, poll: false, url: 'https://github.com/brahimhamdi/pipeline-jenkins-petclinic'
         }
     }
     
@@ -53,14 +53,31 @@ pipeline {
          stage("Build"){
             steps{
                 sh " mvn clean package"
+                sh "sleep 10"
             }
         }
         
         
         
-        stage("Deploy Artifacts to Nexus"){
-            steps{
-                sh 'mvn deploy -DskipTests'
+        stage("Deploy Artifacts to Nexus") {
+           steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-credentials',
+                    usernameVariable: 'NEXUS_USERNAME',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh """
+                        mvn deploy:deploy-file \
+                        -DgroupId=org.springframework.samples \
+                        -DartifactId=spring-petclinic \
+                        -Dversion=3.0.0 \
+                        -Dpackaging=war \
+                        -Dfile=target/spring-petclinic.war \
+                        -DrepositoryId=nexus \
+                        -Durl=http://192.168.56.102:8081/repository/maven-releases/ \
+                        -DskipTests
+                    """
+                }
             }
         }
         
